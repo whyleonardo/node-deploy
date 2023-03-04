@@ -1,6 +1,6 @@
 import { PrismaClient } from '@prisma/client'
 import fastify from 'fastify'
-import {z} from 'zod'
+import { z } from 'zod'
 
 const app = fastify()
 
@@ -19,15 +19,28 @@ app.post('/users', async (req, reply) => {
   })
 
   const { name, email } = createUserSchema.parse(req.body)
-  
-  await prisma.user.create({
-    data: {
-      name,
-      email
+
+
+  const isEmailAlreadyExists = await prisma.user.findMany({
+    where: {
+      email: email
     }
   })
 
+  if (isEmailAlreadyExists.length === 0) {
+    await prisma.user.create({
+      data: {
+        name,
+        email
+      }
+    })
+
   return reply.status(201).send()
+
+  } else {
+    return reply.status(401).send('Email already exists! Try another.')
+  }
+ 
 })
 
 app.listen({
